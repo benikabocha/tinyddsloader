@@ -286,6 +286,8 @@ public:
 
     Result Load(const char* filepath);
     Result Load(std::istream& input);
+    Result Load(const uint8_t* data, size_t size);
+    Result Load(std::vector<uint8_t>&& dds);
 
     const ImageData* GetImageData(uint32_t mipIdx = 0,
                                   uint32_t arrayIdx = 0) const {
@@ -336,8 +338,8 @@ private:
 #undef max
 #endif  // _Win32
 
-#include <fstream>
 #include <algorithm>
+#include <fstream>
 
 namespace tinyddsloader {
 
@@ -718,6 +720,21 @@ Result DDSFile::Load(std::istream& input) {
 
     if (input.bad()) {
         return Result::ErrorRead;
+    }
+
+	return Load(std::move(dds));
+}
+
+Result DDSFile::Load(const uint8_t* data, size_t size) {
+    std::vector<uint8_t> dds(data, data + size);
+    return Load(std::move(dds));
+}
+
+Result DDSFile::Load(std::vector<uint8_t>&& dds) {
+    m_dds.clear();
+
+    if (dds.size() < 4) {
+        return Result::ErrorSize;
     }
 
     for (int i = 0; i < 4; i++) {
