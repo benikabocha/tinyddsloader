@@ -166,6 +166,7 @@ bool LoadGLTexture(GLuint tex, DDSFile& dds) {
                                             imageData->m_width, format.m_format,
                                             format.m_type, imageData->m_mem);
                         }
+                        break;
                     case GL_TEXTURE_1D_ARRAY:
                     case GL_TEXTURE_2D:
                     case GL_TEXTURE_CUBE_MAP: {
@@ -180,7 +181,11 @@ bool LoadGLTexture(GLuint tex, DDSFile& dds) {
                                             format.m_format, format.m_type,
                                             imageData->m_mem);
                         }
+                        break;
                     }
+                    default:
+                        glBindTexture(target, 0);
+                        return false;
                 }
             }
         }
