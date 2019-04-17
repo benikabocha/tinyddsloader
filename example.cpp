@@ -69,14 +69,14 @@ bool IsCompressed(GLenum fmt) {
 bool LoadGLTexture(GLuint tex, DDSFile& dds) {
     GLenum target = GL_INVALID_ENUM;
     bool isArray = false;
-    if (dds.GetTextureDemension() == DDSFile::TextureDimension::Texture1D) {
+    if (dds.GetTextureDimension() == DDSFile::TextureDimension::Texture1D) {
         if (dds.GetArraySize() > 1) {
             target = GL_TEXTURE_1D_ARRAY;
             isArray = true;
         } else {
             target = GL_TEXTURE_1D;
         }
-    } else if (dds.GetTextureDemension() ==
+    } else if (dds.GetTextureDimension() ==
                DDSFile::TextureDimension::Texture2D) {
         if (dds.GetArraySize() > 1) {
             if (dds.IsCubemap()) {
@@ -93,7 +93,7 @@ bool LoadGLTexture(GLuint tex, DDSFile& dds) {
         } else {
             target = GL_TEXTURE_2D;
         }
-    } else if (dds.GetTextureDemension() ==
+    } else if (dds.GetTextureDimension() ==
                DDSFile::TextureDimension::Texture3D) {
         target = GL_TEXTURE_3D;
     }
