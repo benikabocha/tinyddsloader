@@ -12,6 +12,10 @@
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
 #define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#define GL_COMPRESSED_RED_RGTC1_EXT 0x8DBB
+#define GL_COMPRESSED_SIGNED_RED_RGTC1_EXT 0x8DBC
+#define GL_COMPRESSED_RED_GREEN_RGTC2_EXT 0x8DBD
+#define GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT 0x8DBE
 #endif /* GL_EXT_texture_compression_s3tc */
 
 using namespace tinyddsloader;
@@ -33,6 +37,8 @@ bool TranslateFormat(DDSFile::DXGIFormat fmt, GLFormat* outFormat) {
         {GL_BLUE, GL_GREEN, GL_RED, GL_ALPHA},
         {GL_BLUE, GL_GREEN, GL_RED, GL_ONE},
         {GL_RED, GL_GREEN, GL_BLUE, GL_ONE},
+        {GL_RED, GL_ZERO, GL_ZERO, GL_ZERO},
+        {GL_RED, GL_GREEN, GL_ZERO, GL_ZERO},
     };
     using DXGIFmt = DDSFile::DXGIFormat;
     static const GLFormat formats[] = {
@@ -42,6 +48,11 @@ bool TranslateFormat(DDSFile::DXGIFormat fmt, GLFormat* outFormat) {
         {DXGIFmt::BC1_UNorm, 0, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, sws[0]},
         {DXGIFmt::BC2_UNorm, 0, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, sws[0]},
         {DXGIFmt::BC3_UNorm, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, sws[0]},
+        {DXGIFmt::BC4_UNorm, 0, GL_COMPRESSED_RED_RGTC1_EXT, sws[0]},
+        {DXGIFmt::BC4_SNorm, 0, GL_COMPRESSED_SIGNED_RED_RGTC1_EXT, sws[0]},
+        {DXGIFmt::BC5_UNorm, 0, GL_COMPRESSED_RED_GREEN_RGTC2_EXT, sws[0]},
+        {DXGIFmt::BC5_SNorm, 0, GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT,
+         sws[0]},
     };
     for (const auto& format : formats) {
         if (format.m_dxgiFormat == fmt) {
@@ -60,6 +71,10 @@ bool IsCompressed(GLenum fmt) {
         case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+        case GL_COMPRESSED_RED_RGTC1_EXT:
+        case GL_COMPRESSED_SIGNED_RED_RGTC1_EXT:
+        case GL_COMPRESSED_RED_GREEN_RGTC2_EXT:
+        case GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT:
             return true;
         default:
             return false;
