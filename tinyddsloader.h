@@ -277,7 +277,7 @@ public:
         uint8_t m_row3;
     };
 
-	struct BC4Block {
+    struct BC4Block {
         uint8_t m_red0;
         uint8_t m_red1;
         uint8_t m_redR0;
@@ -756,7 +756,7 @@ Result DDSFile::Load(std::istream& input) {
         return Result::ErrorRead;
     }
 
-	return Load(std::move(dds));
+    return Load(std::move(dds));
 }
 
 Result DDSFile::Load(const uint8_t* data, size_t size) {
@@ -872,8 +872,8 @@ Result DDSFile::Load(std::vector<uint8_t>&& dds) {
         if (header->m_flags & uint32_t(HeaderFlagBits::Volume)) {
             m_texDim = TextureDimension::Texture3D;
         } else {
-			auto caps2 = header->m_caps2 &
-				uint32_t(HeaderCaps2FlagBits::CubemapAllFaces);
+            auto caps2 = header->m_caps2 &
+                         uint32_t(HeaderCaps2FlagBits::CubemapAllFaces);
             if (caps2) {
                 if (caps2 != uint32_t(HeaderCaps2FlagBits::CubemapAllFaces)) {
                     return Result::ErrorNotSupported;
@@ -1117,12 +1117,17 @@ void DDSFile::FlipCompressedImageBC1(ImageData& imageData) {
             for (uint32_t x = 0; x < numXBlocks; x++) {
                 auto block0 = blocks0 + x;
                 auto block1 = blocks1 + x;
-                std::swap(block0->m_color0, block1->m_color0);
-                std::swap(block0->m_color1, block1->m_color1);
-                std::swap(block0->m_row0, block1->m_row3);
-                std::swap(block0->m_row1, block1->m_row2);
-                std::swap(block0->m_row2, block1->m_row1);
-                std::swap(block0->m_row3, block1->m_row0);
+                if (blocks0 != blocks1) {
+                    std::swap(block0->m_color0, block1->m_color0);
+                    std::swap(block0->m_color1, block1->m_color1);
+                    std::swap(block0->m_row0, block1->m_row3);
+                    std::swap(block0->m_row1, block1->m_row2);
+                    std::swap(block0->m_row2, block1->m_row1);
+                    std::swap(block0->m_row3, block1->m_row0);
+                } else {
+                    std::swap(block0->m_row0, block0->m_row3);
+                    std::swap(block0->m_row1, block0->m_row2);
+                }
             }
         }
     }
@@ -1151,16 +1156,23 @@ void DDSFile::FlipCompressedImageBC2(ImageData& imageData) {
             for (uint32_t x = 0; x < numXBlocks; x++) {
                 auto block0 = blocks0 + x;
                 auto block1 = blocks1 + x;
-                std::swap(block0->m_alphaRow0, block1->m_alphaRow3);
-                std::swap(block0->m_alphaRow1, block1->m_alphaRow2);
-                std::swap(block0->m_alphaRow2, block1->m_alphaRow1);
-                std::swap(block0->m_alphaRow3, block1->m_alphaRow0);
-                std::swap(block0->m_color0, block1->m_color0);
-                std::swap(block0->m_color1, block1->m_color1);
-                std::swap(block0->m_row0, block1->m_row3);
-                std::swap(block0->m_row1, block1->m_row2);
-                std::swap(block0->m_row2, block1->m_row1);
-                std::swap(block0->m_row3, block1->m_row0);
+                if (block0 != block1) {
+                    std::swap(block0->m_alphaRow0, block1->m_alphaRow3);
+                    std::swap(block0->m_alphaRow1, block1->m_alphaRow2);
+                    std::swap(block0->m_alphaRow2, block1->m_alphaRow1);
+                    std::swap(block0->m_alphaRow3, block1->m_alphaRow0);
+                    std::swap(block0->m_color0, block1->m_color0);
+                    std::swap(block0->m_color1, block1->m_color1);
+                    std::swap(block0->m_row0, block1->m_row3);
+                    std::swap(block0->m_row1, block1->m_row2);
+                    std::swap(block0->m_row2, block1->m_row1);
+                    std::swap(block0->m_row3, block1->m_row0);
+                } else {
+                    std::swap(block0->m_alphaRow0, block0->m_alphaRow3);
+                    std::swap(block0->m_alphaRow1, block0->m_alphaRow2);
+                    std::swap(block0->m_row0, block0->m_row3);
+                    std::swap(block0->m_row1, block0->m_row2);
+                }
             }
         }
     }
@@ -1200,44 +1212,64 @@ void DDSFile::FlipCompressedImageBC3(ImageData& imageData) {
             for (uint32_t x = 0; x < numXBlocks; x++) {
                 auto block0 = blocks0 + x;
                 auto block1 = blocks1 + x;
-                std::swap(block0->m_alpha0, block1->m_alpha0);
-                std::swap(block0->m_alpha1, block1->m_alpha1);
+                if (block0 != block1) {
+                    std::swap(block0->m_alpha0, block1->m_alpha0);
+                    std::swap(block0->m_alpha1, block1->m_alpha1);
 
-                uint8_t r0[6];
-                r0[0] = (block0->m_alphaR4 >> 4) | (block0->m_alphaR5 << 4);
-                r0[1] = (block0->m_alphaR5 >> 4) | (block0->m_alphaR3 << 4);
-                r0[2] = (block0->m_alphaR3 >> 4) | (block0->m_alphaR4 << 4);
-                r0[3] = (block0->m_alphaR1 >> 4) | (block0->m_alphaR2 << 4);
-                r0[4] = (block0->m_alphaR2 >> 4) | (block0->m_alphaR0 << 4);
-                r0[5] = (block0->m_alphaR0 >> 4) | (block0->m_alphaR1 << 4);
-                uint8_t r1[6];
-                r1[0] = (block1->m_alphaR4 >> 4) | (block1->m_alphaR5 << 4);
-                r1[1] = (block1->m_alphaR5 >> 4) | (block1->m_alphaR3 << 4);
-                r1[2] = (block1->m_alphaR3 >> 4) | (block1->m_alphaR4 << 4);
-                r1[3] = (block1->m_alphaR1 >> 4) | (block1->m_alphaR2 << 4);
-                r1[4] = (block1->m_alphaR2 >> 4) | (block1->m_alphaR0 << 4);
-                r1[5] = (block1->m_alphaR0 >> 4) | (block1->m_alphaR1 << 4);
+                    uint8_t r0[6];
+                    r0[0] = (block0->m_alphaR4 >> 4) | (block0->m_alphaR5 << 4);
+                    r0[1] = (block0->m_alphaR5 >> 4) | (block0->m_alphaR3 << 4);
+                    r0[2] = (block0->m_alphaR3 >> 4) | (block0->m_alphaR4 << 4);
+                    r0[3] = (block0->m_alphaR1 >> 4) | (block0->m_alphaR2 << 4);
+                    r0[4] = (block0->m_alphaR2 >> 4) | (block0->m_alphaR0 << 4);
+                    r0[5] = (block0->m_alphaR0 >> 4) | (block0->m_alphaR1 << 4);
+                    uint8_t r1[6];
+                    r1[0] = (block1->m_alphaR4 >> 4) | (block1->m_alphaR5 << 4);
+                    r1[1] = (block1->m_alphaR5 >> 4) | (block1->m_alphaR3 << 4);
+                    r1[2] = (block1->m_alphaR3 >> 4) | (block1->m_alphaR4 << 4);
+                    r1[3] = (block1->m_alphaR1 >> 4) | (block1->m_alphaR2 << 4);
+                    r1[4] = (block1->m_alphaR2 >> 4) | (block1->m_alphaR0 << 4);
+                    r1[5] = (block1->m_alphaR0 >> 4) | (block1->m_alphaR1 << 4);
 
-                block0->m_alphaR0 = r1[0];
-                block0->m_alphaR1 = r1[1];
-                block0->m_alphaR2 = r1[2];
-                block0->m_alphaR3 = r1[3];
-                block0->m_alphaR4 = r1[4];
-                block0->m_alphaR5 = r1[5];
+                    block0->m_alphaR0 = r1[0];
+                    block0->m_alphaR1 = r1[1];
+                    block0->m_alphaR2 = r1[2];
+                    block0->m_alphaR3 = r1[3];
+                    block0->m_alphaR4 = r1[4];
+                    block0->m_alphaR5 = r1[5];
 
-                block1->m_alphaR0 = r0[0];
-                block1->m_alphaR1 = r0[1];
-                block1->m_alphaR2 = r0[2];
-                block1->m_alphaR3 = r0[3];
-                block1->m_alphaR4 = r0[4];
-                block1->m_alphaR5 = r0[5];
+                    block1->m_alphaR0 = r0[0];
+                    block1->m_alphaR1 = r0[1];
+                    block1->m_alphaR2 = r0[2];
+                    block1->m_alphaR3 = r0[3];
+                    block1->m_alphaR4 = r0[4];
+                    block1->m_alphaR5 = r0[5];
 
-                std::swap(block0->m_color0, block1->m_color0);
-                std::swap(block0->m_color1, block1->m_color1);
-                std::swap(block0->m_row0, block1->m_row3);
-                std::swap(block0->m_row1, block1->m_row2);
-                std::swap(block0->m_row2, block1->m_row1);
-                std::swap(block0->m_row3, block1->m_row0);
+                    std::swap(block0->m_color0, block1->m_color0);
+                    std::swap(block0->m_color1, block1->m_color1);
+                    std::swap(block0->m_row0, block1->m_row3);
+                    std::swap(block0->m_row1, block1->m_row2);
+                    std::swap(block0->m_row2, block1->m_row1);
+                    std::swap(block0->m_row3, block1->m_row0);
+                } else {
+                    uint8_t r0[6];
+                    r0[0] = (block0->m_alphaR4 >> 4) | (block0->m_alphaR5 << 4);
+                    r0[1] = (block0->m_alphaR5 >> 4) | (block0->m_alphaR3 << 4);
+                    r0[2] = (block0->m_alphaR3 >> 4) | (block0->m_alphaR4 << 4);
+                    r0[3] = (block0->m_alphaR1 >> 4) | (block0->m_alphaR2 << 4);
+                    r0[4] = (block0->m_alphaR2 >> 4) | (block0->m_alphaR0 << 4);
+                    r0[5] = (block0->m_alphaR0 >> 4) | (block0->m_alphaR1 << 4);
+
+                    block0->m_alphaR0 = r0[0];
+                    block0->m_alphaR1 = r0[1];
+                    block0->m_alphaR2 = r0[2];
+                    block0->m_alphaR3 = r0[3];
+                    block0->m_alphaR4 = r0[4];
+                    block0->m_alphaR5 = r0[5];
+
+                    std::swap(block0->m_row0, block0->m_row3);
+                    std::swap(block0->m_row1, block0->m_row2);
+                }
             }
         }
     }
@@ -1275,37 +1307,55 @@ void DDSFile::FlipCompressedImageBC4(ImageData& imageData) {
             for (uint32_t x = 0; x < numXBlocks; x++) {
                 auto block0 = blocks0 + x;
                 auto block1 = blocks1 + x;
-                std::swap(block0->m_red0, block1->m_red0);
-                std::swap(block0->m_red1, block1->m_red1);
+                if (block0 != block1) {
+                    std::swap(block0->m_red0, block1->m_red0);
+                    std::swap(block0->m_red1, block1->m_red1);
 
-                uint8_t r0[6];
-                r0[0] = (block0->m_redR4 >> 4) | (block0->m_redR5 << 4);
-                r0[1] = (block0->m_redR5 >> 4) | (block0->m_redR3 << 4);
-                r0[2] = (block0->m_redR3 >> 4) | (block0->m_redR4 << 4);
-                r0[3] = (block0->m_redR1 >> 4) | (block0->m_redR2 << 4);
-                r0[4] = (block0->m_redR2 >> 4) | (block0->m_redR0 << 4);
-                r0[5] = (block0->m_redR0 >> 4) | (block0->m_redR1 << 4);
-                uint8_t r1[6];
-                r1[0] = (block1->m_redR4 >> 4) | (block1->m_redR5 << 4);
-                r1[1] = (block1->m_redR5 >> 4) | (block1->m_redR3 << 4);
-                r1[2] = (block1->m_redR3 >> 4) | (block1->m_redR4 << 4);
-                r1[3] = (block1->m_redR1 >> 4) | (block1->m_redR2 << 4);
-                r1[4] = (block1->m_redR2 >> 4) | (block1->m_redR0 << 4);
-                r1[5] = (block1->m_redR0 >> 4) | (block1->m_redR1 << 4);
+                    uint8_t r0[6];
+                    r0[0] = (block0->m_redR4 >> 4) | (block0->m_redR5 << 4);
+                    r0[1] = (block0->m_redR5 >> 4) | (block0->m_redR3 << 4);
+                    r0[2] = (block0->m_redR3 >> 4) | (block0->m_redR4 << 4);
+                    r0[3] = (block0->m_redR1 >> 4) | (block0->m_redR2 << 4);
+                    r0[4] = (block0->m_redR2 >> 4) | (block0->m_redR0 << 4);
+                    r0[5] = (block0->m_redR0 >> 4) | (block0->m_redR1 << 4);
+                    uint8_t r1[6];
+                    r1[0] = (block1->m_redR4 >> 4) | (block1->m_redR5 << 4);
+                    r1[1] = (block1->m_redR5 >> 4) | (block1->m_redR3 << 4);
+                    r1[2] = (block1->m_redR3 >> 4) | (block1->m_redR4 << 4);
+                    r1[3] = (block1->m_redR1 >> 4) | (block1->m_redR2 << 4);
+                    r1[4] = (block1->m_redR2 >> 4) | (block1->m_redR0 << 4);
+                    r1[5] = (block1->m_redR0 >> 4) | (block1->m_redR1 << 4);
 
-                block0->m_redR0 = r1[0];
-                block0->m_redR1 = r1[1];
-                block0->m_redR2 = r1[2];
-                block0->m_redR3 = r1[3];
-                block0->m_redR4 = r1[4];
-                block0->m_redR5 = r1[5];
+                    block0->m_redR0 = r1[0];
+                    block0->m_redR1 = r1[1];
+                    block0->m_redR2 = r1[2];
+                    block0->m_redR3 = r1[3];
+                    block0->m_redR4 = r1[4];
+                    block0->m_redR5 = r1[5];
 
-                block1->m_redR0 = r0[0];
-                block1->m_redR1 = r0[1];
-                block1->m_redR2 = r0[2];
-                block1->m_redR3 = r0[3];
-                block1->m_redR4 = r0[4];
-                block1->m_redR5 = r0[5];
+                    block1->m_redR0 = r0[0];
+                    block1->m_redR1 = r0[1];
+                    block1->m_redR2 = r0[2];
+                    block1->m_redR3 = r0[3];
+                    block1->m_redR4 = r0[4];
+                    block1->m_redR5 = r0[5];
+
+                } else {
+                    uint8_t r0[6];
+                    r0[0] = (block0->m_redR4 >> 4) | (block0->m_redR5 << 4);
+                    r0[1] = (block0->m_redR5 >> 4) | (block0->m_redR3 << 4);
+                    r0[2] = (block0->m_redR3 >> 4) | (block0->m_redR4 << 4);
+                    r0[3] = (block0->m_redR1 >> 4) | (block0->m_redR2 << 4);
+                    r0[4] = (block0->m_redR2 >> 4) | (block0->m_redR0 << 4);
+                    r0[5] = (block0->m_redR0 >> 4) | (block0->m_redR1 << 4);
+
+                    block0->m_redR0 = r0[0];
+                    block0->m_redR1 = r0[1];
+                    block0->m_redR2 = r0[2];
+                    block0->m_redR3 = r0[3];
+                    block0->m_redR4 = r0[4];
+                    block0->m_redR5 = r0[5];
+                }
             }
         }
     }
@@ -1357,69 +1407,101 @@ void DDSFile::FlipCompressedImageBC5(ImageData& imageData) {
             for (uint32_t x = 0; x < numXBlocks; x++) {
                 auto block0 = blocks0 + x;
                 auto block1 = blocks1 + x;
-                std::swap(block0->m_red0, block1->m_red0);
-                std::swap(block0->m_red1, block1->m_red1);
+                if (block0 != block1) {
+                    std::swap(block0->m_red0, block1->m_red0);
+                    std::swap(block0->m_red1, block1->m_red1);
 
-                uint8_t r0[6];
-                r0[0] = (block0->m_redR4 >> 4) | (block0->m_redR5 << 4);
-                r0[1] = (block0->m_redR5 >> 4) | (block0->m_redR3 << 4);
-                r0[2] = (block0->m_redR3 >> 4) | (block0->m_redR4 << 4);
-                r0[3] = (block0->m_redR1 >> 4) | (block0->m_redR2 << 4);
-                r0[4] = (block0->m_redR2 >> 4) | (block0->m_redR0 << 4);
-                r0[5] = (block0->m_redR0 >> 4) | (block0->m_redR1 << 4);
-                uint8_t r1[6];
-                r1[0] = (block1->m_redR4 >> 4) | (block1->m_redR5 << 4);
-                r1[1] = (block1->m_redR5 >> 4) | (block1->m_redR3 << 4);
-                r1[2] = (block1->m_redR3 >> 4) | (block1->m_redR4 << 4);
-                r1[3] = (block1->m_redR1 >> 4) | (block1->m_redR2 << 4);
-                r1[4] = (block1->m_redR2 >> 4) | (block1->m_redR0 << 4);
-                r1[5] = (block1->m_redR0 >> 4) | (block1->m_redR1 << 4);
+                    uint8_t r0[6];
+                    r0[0] = (block0->m_redR4 >> 4) | (block0->m_redR5 << 4);
+                    r0[1] = (block0->m_redR5 >> 4) | (block0->m_redR3 << 4);
+                    r0[2] = (block0->m_redR3 >> 4) | (block0->m_redR4 << 4);
+                    r0[3] = (block0->m_redR1 >> 4) | (block0->m_redR2 << 4);
+                    r0[4] = (block0->m_redR2 >> 4) | (block0->m_redR0 << 4);
+                    r0[5] = (block0->m_redR0 >> 4) | (block0->m_redR1 << 4);
+                    uint8_t r1[6];
+                    r1[0] = (block1->m_redR4 >> 4) | (block1->m_redR5 << 4);
+                    r1[1] = (block1->m_redR5 >> 4) | (block1->m_redR3 << 4);
+                    r1[2] = (block1->m_redR3 >> 4) | (block1->m_redR4 << 4);
+                    r1[3] = (block1->m_redR1 >> 4) | (block1->m_redR2 << 4);
+                    r1[4] = (block1->m_redR2 >> 4) | (block1->m_redR0 << 4);
+                    r1[5] = (block1->m_redR0 >> 4) | (block1->m_redR1 << 4);
 
-                block0->m_redR0 = r1[0];
-                block0->m_redR1 = r1[1];
-                block0->m_redR2 = r1[2];
-                block0->m_redR3 = r1[3];
-                block0->m_redR4 = r1[4];
-                block0->m_redR5 = r1[5];
+                    block0->m_redR0 = r1[0];
+                    block0->m_redR1 = r1[1];
+                    block0->m_redR2 = r1[2];
+                    block0->m_redR3 = r1[3];
+                    block0->m_redR4 = r1[4];
+                    block0->m_redR5 = r1[5];
 
-                block1->m_redR0 = r0[0];
-                block1->m_redR1 = r0[1];
-                block1->m_redR2 = r0[2];
-                block1->m_redR3 = r0[3];
-                block1->m_redR4 = r0[4];
-                block1->m_redR5 = r0[5];
+                    block1->m_redR0 = r0[0];
+                    block1->m_redR1 = r0[1];
+                    block1->m_redR2 = r0[2];
+                    block1->m_redR3 = r0[3];
+                    block1->m_redR4 = r0[4];
+                    block1->m_redR5 = r0[5];
 
-                std::swap(block0->m_green0, block1->m_green0);
-                std::swap(block0->m_green1, block1->m_green1);
+                    std::swap(block0->m_green0, block1->m_green0);
+                    std::swap(block0->m_green1, block1->m_green1);
 
-                uint8_t g0[6];
-                g0[0] = (block0->m_greenR4 >> 4) | (block0->m_greenR5 << 4);
-                g0[1] = (block0->m_greenR5 >> 4) | (block0->m_greenR3 << 4);
-                g0[2] = (block0->m_greenR3 >> 4) | (block0->m_greenR4 << 4);
-                g0[3] = (block0->m_greenR1 >> 4) | (block0->m_greenR2 << 4);
-                g0[4] = (block0->m_greenR2 >> 4) | (block0->m_greenR0 << 4);
-                g0[5] = (block0->m_greenR0 >> 4) | (block0->m_greenR1 << 4);
-                uint8_t g1[6];
-                g1[0] = (block1->m_greenR4 >> 4) | (block1->m_greenR5 << 4);
-                g1[1] = (block1->m_greenR5 >> 4) | (block1->m_greenR3 << 4);
-                g1[2] = (block1->m_greenR3 >> 4) | (block1->m_greenR4 << 4);
-                g1[3] = (block1->m_greenR1 >> 4) | (block1->m_greenR2 << 4);
-                g1[4] = (block1->m_greenR2 >> 4) | (block1->m_greenR0 << 4);
-                g1[5] = (block1->m_greenR0 >> 4) | (block1->m_greenR1 << 4);
+                    uint8_t g0[6];
+                    g0[0] = (block0->m_greenR4 >> 4) | (block0->m_greenR5 << 4);
+                    g0[1] = (block0->m_greenR5 >> 4) | (block0->m_greenR3 << 4);
+                    g0[2] = (block0->m_greenR3 >> 4) | (block0->m_greenR4 << 4);
+                    g0[3] = (block0->m_greenR1 >> 4) | (block0->m_greenR2 << 4);
+                    g0[4] = (block0->m_greenR2 >> 4) | (block0->m_greenR0 << 4);
+                    g0[5] = (block0->m_greenR0 >> 4) | (block0->m_greenR1 << 4);
+                    uint8_t g1[6];
+                    g1[0] = (block1->m_greenR4 >> 4) | (block1->m_greenR5 << 4);
+                    g1[1] = (block1->m_greenR5 >> 4) | (block1->m_greenR3 << 4);
+                    g1[2] = (block1->m_greenR3 >> 4) | (block1->m_greenR4 << 4);
+                    g1[3] = (block1->m_greenR1 >> 4) | (block1->m_greenR2 << 4);
+                    g1[4] = (block1->m_greenR2 >> 4) | (block1->m_greenR0 << 4);
+                    g1[5] = (block1->m_greenR0 >> 4) | (block1->m_greenR1 << 4);
 
-                block0->m_greenR0 = g1[0];
-                block0->m_greenR1 = g1[1];
-                block0->m_greenR2 = g1[2];
-                block0->m_greenR3 = g1[3];
-                block0->m_greenR4 = g1[4];
-                block0->m_greenR5 = g1[5];
+                    block0->m_greenR0 = g1[0];
+                    block0->m_greenR1 = g1[1];
+                    block0->m_greenR2 = g1[2];
+                    block0->m_greenR3 = g1[3];
+                    block0->m_greenR4 = g1[4];
+                    block0->m_greenR5 = g1[5];
 
-                block1->m_greenR0 = g0[0];
-                block1->m_greenR1 = g0[1];
-                block1->m_greenR2 = g0[2];
-                block1->m_greenR3 = g0[3];
-                block1->m_greenR4 = g0[4];
-                block1->m_greenR5 = g0[5];
+                    block1->m_greenR0 = g0[0];
+                    block1->m_greenR1 = g0[1];
+                    block1->m_greenR2 = g0[2];
+                    block1->m_greenR3 = g0[3];
+                    block1->m_greenR4 = g0[4];
+                    block1->m_greenR5 = g0[5];
+                } else {
+                    uint8_t r0[6];
+                    r0[0] = (block0->m_redR4 >> 4) | (block0->m_redR5 << 4);
+                    r0[1] = (block0->m_redR5 >> 4) | (block0->m_redR3 << 4);
+                    r0[2] = (block0->m_redR3 >> 4) | (block0->m_redR4 << 4);
+                    r0[3] = (block0->m_redR1 >> 4) | (block0->m_redR2 << 4);
+                    r0[4] = (block0->m_redR2 >> 4) | (block0->m_redR0 << 4);
+                    r0[5] = (block0->m_redR0 >> 4) | (block0->m_redR1 << 4);
+
+                    block0->m_redR0 = r0[0];
+                    block0->m_redR1 = r0[1];
+                    block0->m_redR2 = r0[2];
+                    block0->m_redR3 = r0[3];
+                    block0->m_redR4 = r0[4];
+                    block0->m_redR5 = r0[5];
+
+                    uint8_t g0[6];
+                    g0[0] = (block0->m_greenR4 >> 4) | (block0->m_greenR5 << 4);
+                    g0[1] = (block0->m_greenR5 >> 4) | (block0->m_greenR3 << 4);
+                    g0[2] = (block0->m_greenR3 >> 4) | (block0->m_greenR4 << 4);
+                    g0[3] = (block0->m_greenR1 >> 4) | (block0->m_greenR2 << 4);
+                    g0[4] = (block0->m_greenR2 >> 4) | (block0->m_greenR0 << 4);
+                    g0[5] = (block0->m_greenR0 >> 4) | (block0->m_greenR1 << 4);
+
+                    block0->m_greenR0 = g0[0];
+                    block0->m_greenR1 = g0[1];
+                    block0->m_greenR2 = g0[2];
+                    block0->m_greenR3 = g0[3];
+                    block0->m_greenR4 = g0[4];
+                    block0->m_greenR5 = g0[5];
+                }
             }
         }
     }
